@@ -96,6 +96,6 @@ def search(query, top_k=5):
 - No specialized knowledge of vector databases required
 - Combines the simplicity of SQLite with the power of modern embeddings
 - All code is open source - feel free to fork, modify, and contribute!
-- Questions? Find me after the talk or check out the GitHub repo
+- Questions? Find me after the talk or check out the GitHub repo **https://github.com/truevis/vector-database**
 
 Thank you! ขอบคุณครับ/คะ!
