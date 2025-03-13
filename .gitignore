@@ -1,0 +1,59 @@
+# Ignore configuration file with sensitive information
+config.py
+
+# Ignore Python bytecode files
+__pycache__/
+*.pyc
+
+# Ignore environment-specific files
+.env
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+
+# Ignore operating system files
+.DS_Store
+Thumbs.db
+.history
+error.log
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.python-version
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+coverage.xml
+*.cover
+
+# Documentation
+docs/_build/
+site/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Logs
+logs/
+*.log
+
+# Local development settings
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+secrets.toml
+*.db
