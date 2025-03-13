@@ -1,101 +1,105 @@
-# Building a Vector Database with Python, SQLite, and OpenAI
+# Storing Vector Embeddings in SQLite with Python
 
 ## Introduction (30 seconds)
+- Hello Bangkok Python Users Group! I'm excited to share a practical approach to vector embeddings
+- The key insight: You don't need specialized vector databases - SQLite works perfectly!
+- This talk shows how Python + SQLite can power semantic search through vector embeddings
+- Perfect for projects where simplicity and portability matter more than extreme scale
 
-- This tool lets you create and search through vector embeddings of text documents
-- Perfect for semantic search, document retrieval, and AI applications
-- Built entirely with Python and SQLite - no specialized vector DB required!
+## Why SQLite for Vector Storage? (1 minute)
+- **The Vector Storage Challenge**:
+  - Vector embeddings are high-dimensional arrays (768-1536 dimensions)
+  - Need efficient storage and retrieval for similarity search
+  - Most solutions require specialized databases or complex setups
 
-## The Python Ecosystem at Work (1 minute)
+- **SQLite Advantages**:
+  - Built into Python's standard library - zero dependencies
+  - Stores binary data efficiently with BLOB type
+  - Single file database - perfect for portability
+  - Surprisingly good performance for most use cases
+  - Familiar SQL interface for queries
 
-- **Core Python Libraries**:
+## Implementation: Storing Vectors in SQLite (2 minutes)
 
-  - `sqlite3` for database operations - Python's built-in DB that's perfect for vector storage
-  - `numpy` for efficient vector operations and cosine similarity calculations
-  - `tkinter` for a simple GUI interface
-  - `openai` for generating embeddings via API
-  - `streamlit` for API key and if it will get turned into a Web app
-- **Python's Strengths Leveraged**:
-
-  - Easy file I/O operations for document processing
-  - Binary data handling for vector serialization
-  - Context managers for clean resource handling
-  - Type hints for better code documentation
-
-## Key Python Implementation Details (2 minutes)
-
-### Document Processing
-
+### Database Schema
 ```python
-def process_text_files(folder_path):
-    for file in Path(folder_path).glob('**/*.txt'):
-        with open(file, 'r', encoding='utf-8') as f:
-            text = f.read()
-        chunks = chunk_text(text, max_tokens=1000)
-        for chunk in chunks:
-            vector = get_embedding(chunk, model="text-embedding-3-small")
-            store_in_sqlite(chunk, vector)
-```
-
-### Vector Storage with SQLite
-
-```python
-def store_in_sqlite(text, vector):
-    # Convert numpy array to binary for efficient storage
-    vector_binary = np.array(vector, dtype=np.float32).tobytes()
-  
+def create_vector_table():
     with sqlite3.connect('vectors.db') as conn:
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT OR REPLACE INTO vectors (text, embedding) 
+            CREATE TABLE IF NOT EXISTS vectors (
+                id INTEGER PRIMARY KEY,
+                text TEXT,
+                embedding BLOB,  # Binary storage for vector data
+                metadata TEXT    # Optional JSON for additional info
+            )
+        ''')
+        conn.commit()
+```
+
+### Converting Vectors to Binary for Storage
+```python
+def store_vector(text, vector):
+    # Convert numpy array to binary for efficient storage
+    vector_binary = np.array(vector, dtype=np.float32).tobytes()
+    
+    with sqlite3.connect('vectors.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO vectors (text, embedding) 
             VALUES (?, ?)
         ''', (text, vector_binary))
         conn.commit()
 ```
 
-### Semantic Search with Cosine Similarity
-
+### Retrieving and Using Vectors
 ```python
-def search(query, top_k=5):
-    query_vector = get_embedding(query, model="text-embedding-3-small")
-  
+def search_similar(query_vector, top_k=5):
+    # Convert query to binary for comparison
+    query_vector = np.array(query_vector, dtype=np.float32)
+    
     with sqlite3.connect('vectors.db') as conn:
         cursor = conn.cursor()
         results = []
-      
+        
+        # Retrieve all vectors and calculate similarity
         for row in cursor.execute('SELECT id, text, embedding FROM vectors'):
+            # Convert binary back to numpy array
             db_vector = np.frombuffer(row[2], dtype=np.float32)
-            similarity = cosine_similarity(query_vector, db_vector)
+            
+            # Calculate cosine similarity
+            similarity = np.dot(query_vector, db_vector) / (
+                np.linalg.norm(query_vector) * np.linalg.norm(db_vector)
+            )
+            
             results.append((row[0], row[1], similarity))
-      
-        # Sort by similarity and return top_k
+        
+        # Return top matches
         return sorted(results, key=lambda x: x[2], reverse=True)[:top_k]
 ```
 
-## Python-Specific Optimizations (1 minute)
+## Performance Optimizations (1 minute)
 
-- **Rate Limiting Implementation**:
+- **Binary Storage Efficiency**:
+  - 1536-dimension vector as float32 = 6KB per vector
+  - SQLite compression reduces storage footprint
+  - Batch inserts for faster processing
 
-  - Using Python's `time.sleep()` for API rate limiting
-  - Implementing token counting with regex and custom functions
-  - Batch processing with generator expressions
-- **Error Handling**:
+- **Search Optimizations**:
+  - In-memory database option for speed (`sqlite3.connect(':memory:')`)
+  - Indexing metadata for filtered searches
+  - Implementing pagination for large result sets
 
-  - Try/except blocks for robust API interactions
-  - Context managers for database connections
-  - Graceful degradation with fallback options
-- **Pythonic Code Patterns**:
-
-  - List comprehensions for data transformation
-  - Generator functions for memory efficiency
-  - Decorators for rate limiting and logging
+- **Scaling Considerations**:
+  - Works well up to ~100K vectors on standard hardware
+  - Can partition by creating multiple database files
+  - Async processing with `aiosqlite` for better throughput
 
 ## Conclusion (30 seconds)
-
-- Python makes building a vector database accessible to everyone
-- No specialized knowledge of vector databases required
-- Combines the simplicity of SQLite with the power of modern embeddings
-- All code is open source - feel free to fork, modify, and contribute!
-- Questions? Find me after the talk or check out the GitHub repo **https://github.com/truevis/vector-database**
+- SQLite is a surprisingly capable vector database for many use cases
+- Perfect for prototyping, small-to-medium applications, and edge deployments
+- Python + SQLite + NumPy = powerful semantic search with minimal complexity
+- All code is open source - check out the GitHub repo: **https://github.com/truevis/vector-database**
+- Questions? Find me after the talk!
 
 Thank you! ขอบคุณครับ/คะ!
