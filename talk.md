@@ -22,6 +22,51 @@
   - Surprisingly good performance for most use cases
   - Familiar SQL interface for queries
 
+## Getting Embeddings from OpenAI (1 minute)
+
+```python
+import openai
+import os
+import time
+from typing import List
+
+# Set up OpenAI API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def get_embedding(text: str, model: str = "text-embedding-3-small") -> List[float]:
+    """Get a vector embedding from OpenAI API."""
+    # Basic rate limiting
+    time.sleep(0.1)
+    
+    try:
+        response = openai.Embedding.create(
+            input=text,
+            model=model
+        )
+        # Extract the embedding vector from the response
+        embedding = response['data'][0]['embedding']
+        return embedding
+    except Exception as e:
+        print(f"Error getting embedding: {e}")
+        # Return empty vector as fallback
+        return [0.0] * 1536  # Default size for text-embedding-3-small
+
+def batch_get_embeddings(texts: List[str], model: str = "text-embedding-3-small") -> List[List[float]]:
+    """Process multiple texts in a single API call for efficiency."""
+    try:
+        response = openai.Embedding.create(
+            input=texts,
+            model=model
+        )
+        # Extract embeddings for all texts
+        embeddings = [data['embedding'] for data in response['data']]
+        return embeddings
+    except Exception as e:
+        print(f"Error in batch embedding: {e}")
+        # Return empty vectors as fallback
+        return [[0.0] * 1536 for _ in range(len(texts))]
+```
+
 ## Implementation: Storing Vectors in SQLite (2 minutes)
 
 ### Database Schema
@@ -84,6 +129,29 @@ def search_similar(query_vector, top_k=5):
         return sorted(results, key=lambda x: x[2], reverse=True)[:top_k]
 ```
 
+## Complete Example: From Text to Search (1 minute)
+
+```python
+# Process a document and search for similar content
+def process_and_search():
+    # 1. Get some text
+    document = "Python is a high-level programming language known for its readability and versatility."
+    query = "What programming languages are easy to read?"
+    
+    # 2. Get embeddings from OpenAI
+    doc_embedding = get_embedding(document)
+    
+    # 3. Store in SQLite
+    store_vector(document, doc_embedding)
+    
+    # 4. Later, search with a query
+    query_embedding = get_embedding(query)
+    results = search_similar(query_embedding)
+    
+    # 5. Display results
+    for id, text, similarity in results:
+        print(f"Similarity: {similarity:.4f} - {text}")
+```
 
 ## Conclusion (30 seconds)
 
